@@ -1,0 +1,3 @@
+[submodule "ngx_auto_lib_core"]
+	path = ngx_auto_lib_core
+	url = https://github.com/uizaio/ngx_auto_lib.git
