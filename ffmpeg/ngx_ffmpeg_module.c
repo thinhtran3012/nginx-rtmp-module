@@ -68,6 +68,14 @@ static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
         offsetof(ngx_rtmp_ffmpeg_app_conf_t, type),
         NULL
     },
+    {
+        ngx_string("path"),
+        NGX_RTMP_MAIN_CONF|NGX_RTMP_SRV_CONF|NGX_RTMP_APP_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_str_slot,
+        NGX_RTMP_APP_CONF_OFFSET,
+        offsetof(ngx_rtmp_ffmpeg_app_conf_t, path),
+        NULL
+    },
     ngx_null_command
 };
 
