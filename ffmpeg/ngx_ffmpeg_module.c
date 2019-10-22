@@ -34,7 +34,8 @@ static void * ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf);
 static char * ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child);
 
 typedef struct {
-    ngx_str_t type; /*hls/mpeg dash/fmp4*/
+    ngx_str_t                           type; /*hls/mpeg dash/fmp4*/
+    ngx_flag_t                          ffmpeg;
 } ngx_rtmp_ffmpeg_app_conf_t;
 
 typedef struct{
@@ -42,6 +43,14 @@ typedef struct{
 } ngx_rtmp_ffmpeg_ctx_t;
 
 static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
+    {
+        ngx_string("ffmpeg"),
+        NGX_RTMP_MAIN_CONF|NGX_RTMP_SRV_CONF|NGX_RTMP_APP_CONF|NGX_CONF_TAKE1,
+        ngx_conf_set_flag_slot,
+        NGX_RTMP_APP_CONF_OFFSET,
+        offsetof(ngx_rtmp_ffmpeg_app_conf_t, ffmpeg),
+        NULL
+    },
     {
         ngx_string("type"),
         NGX_RTMP_MAIN_CONF|NGX_RTMP_SRV_CONF|NGX_RTMP_APP_CONF|NGX_CONF_TAKE1,
@@ -105,10 +114,12 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     AVPacket                            *av_out_packet;
     AVCodec                             *av_out_codec;
     AVCodecContext                      *av_out_codec_context;
+    AVOutputFormat                      *av_output_format;
 
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
-    if (facf == NULL) {
+    //ignore if this module is not enable
+    if (facf == NULL || !facf->ffmpeg) {
         goto next;
     }
     ngx_log_debug2(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
@@ -128,8 +139,13 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     }
 
     //need to init ffmpeg's parameters
+    av_output_format = av_guess_format("hls", NULL, NULL);
+    if(!av_output_format){
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                      "ffmpeg: no output format");
+        return NGX_ERROR;
+    }
     
-
     next:
     return next_publish(s, v);
 }
@@ -197,6 +213,8 @@ ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child)
 {
     ngx_rtmp_ffmpeg_app_conf_t    *prev = parent;
     ngx_rtmp_ffmpeg_app_conf_t    *conf = child;
+    ngx_conf_merge_value(conf->ffmpeg, prev->ffmpeg, 0);
     ngx_conf_merge_str_value(conf->type, prev->type, "hls");//default we use hls format
+
     return NGX_CONF_OK;
 }
