@@ -65,7 +65,7 @@ static ngx_rtmp_module_t ngx_rtmp_ffmpeg_module_ctx = {
 
     ngx_rtmp_ffmpeg_create_app_conf,       /* create location configuration */
     ngx_rtmp_ffmpeg_merge_app_conf,        /* merge location configuration */
-}
+};
 
 ngx_module_t  ngx_rtmp_ffmpeg_module = {
     NGX_MODULE_V1,
