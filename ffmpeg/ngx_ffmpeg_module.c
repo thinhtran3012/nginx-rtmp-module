@@ -141,6 +141,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     if(!ctx->is_video_stream_opened){
         AVStream *out_av_stream;
         out_av_stream = avformat_new_stream(ctx->out_av_format_context, NULL);
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 21 ");
         if(!out_av_stream){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not create video stream");
             return NGX_ERROR;
