@@ -39,7 +39,7 @@ typedef struct {
 
 typedef struct{
     ngx_str_t           stream_id;
-} ngx_rtmp_hls_ctx_t;
+} ngx_rtmp_ffmpeg_ctx_t;
 
 static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
     {
