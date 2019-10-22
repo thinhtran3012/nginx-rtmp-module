@@ -43,7 +43,7 @@ typedef struct {
 typedef struct{
     ngx_str_t                           stream_id;
     ngx_str_t                           playlist;//path to playlist
-    AVFormatContext                     *av_out_format_context;
+    AVFormatContext                     *out_av_format_context;
     AVPacket                            *out_av_packet;
     AVCodec                             *out_av_codec;
     AVCodecContext                      *out_av_codec_context;
@@ -258,7 +258,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         return NGX_ERROR;
     }
     ctx->out_av_format = av_guess_format("hls", NULL, NULL);
-    if(!ctx->av_output_format){
+    if(!ctx->out_av_format){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: no output format.");
         return NGX_ERROR;
     }    
