@@ -200,7 +200,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     /* skip RTMP & H264 headers */
 
     in->buf->pos += 5;
-
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: in video stream.");
     return NGX_OK;
 }
 
