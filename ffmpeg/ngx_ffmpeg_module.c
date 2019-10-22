@@ -51,6 +51,7 @@ typedef struct{
     int                                 is_video_stream_opened;
     int                                 video_stream_index;
     AVOutputFormat                      *out_av_format;
+    int                                 nb_streams;//number of stream in file
 } ngx_rtmp_ffmpeg_ctx_t;
 
 static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
@@ -136,24 +137,20 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         return NGX_OK;
     }
 
-    //video is always in track 0
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2 ");
+    //video is always in track 0    
     if(!ctx->is_video_stream_opened){
         AVStream *out_av_stream;
-        out_av_stream = avformat_new_stream(ctx->out_av_format_context, NULL);
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 21 ");
+        out_av_stream = avformat_new_stream(ctx->out_av_format_context, NULL);        
         if(!out_av_stream){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not create video stream");
             return NGX_ERROR;
         }        
         ctx->is_video_stream_opened = 1;
-        ctx->out_av_format_context->nb_streams += 1;
-        ctx->video_stream_index = ctx->out_av_format_context->nb_streams;
-    }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3 ");
+        ctx->nb_streams += 1;
+        ctx->video_stream_index = ctx->nb_streams;
+    }    
     if(!ctx->is_codec_opened){
-        ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_H264);
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 31 ");
+        ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_H264);        
         if(!ctx->out_av_codec){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not find approriate encoder.");
             return NGX_ERROR;
@@ -184,8 +181,10 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set options.");
         return NGX_ERROR;
     }
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 5 ");
     AVDictionary* opts = NULL;
     ret = avformat_write_header(ctx->out_av_format_context, &opts);
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 6 ");
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not write header.");
         return NGX_ERROR;
@@ -268,7 +267,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output format context.");
             return NGX_ERROR;
         }
-        // ctx->out_av_format_context->nb_streams = -1;
+        ctx->nb_streams = -1;
     }    
     ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "mpegts", 0);  
     if(ret < 0){
