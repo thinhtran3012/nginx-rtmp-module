@@ -123,13 +123,13 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
     codec_ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_codec_module);
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: in video stream.");
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1 ");
     if (facf == NULL || !facf->ffmpeg || ctx == NULL || codec_ctx == NULL ||
         codec_ctx->avc_header == NULL || h->mlen < 5)
     {
         return NGX_OK;
     }
-    
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2 ");
 
     /* Only H264 is supported */
     if (codec_ctx->video_codec_id != NGX_RTMP_VIDEO_H264) {
