@@ -137,7 +137,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         }
         *ngx_cpymem(ctx->stream_id.data, v->name, ctx->stream_id.len) = 0;
     }
-
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: in ffmpeg module");
     //need to init ffmpeg's parameters
     av_output_format = av_guess_format("hls", NULL, NULL);
     if(!av_output_format){
