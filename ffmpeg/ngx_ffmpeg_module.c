@@ -144,7 +144,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: no output format");
         return NGX_ERROR;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s", av_output_format->name;)
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s", av_output_format->name);
     next:
     return next_publish(s, v);
 }
