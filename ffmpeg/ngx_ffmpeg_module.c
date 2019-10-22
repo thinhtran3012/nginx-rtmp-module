@@ -115,7 +115,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
     codec_ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_codec_module);
-    if (facf == NULL || !facf->dash || ctx == NULL || codec_ctx == NULL ||
+    if (facf == NULL || !facf->ffmpeg || ctx == NULL || codec_ctx == NULL ||
         codec_ctx->avc_header == NULL || h->mlen < 5)
     {
         return NGX_OK;
@@ -151,7 +151,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ctx->out_av_codec_context->bit_rate = 40000;
         ctx->out_av_codec_context->width = codec_ctx->width;
         ctx->out_av_codec_context->height = codec_ctx->height;
-        ctx->out_av_codec_context->time_base = codec_ctx->frame_rate;
+        ctx->out_av_codec_context->time_base = (AVRational){1, codec_ctx->frame_rate};
         ctx->out_av_codec_context->gop_size = 10;
         ctx->out_av_codec_context->max_b_frames = 1;
         ctx->out_av_codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
