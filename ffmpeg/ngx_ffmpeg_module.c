@@ -110,6 +110,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     ngx_rtmp_codec_ctx_t              *codec_ctx;
     uint8_t                           ftype, htype;
     int                               ret;
+    u_char                            *p;
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
@@ -182,7 +183,6 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     if (htype != 1) {
         return NGX_OK;
     }
-    p = (u_char *) &delay;
 
     p[0] = in->buf->pos[4];
     p[1] = in->buf->pos[3];
