@@ -119,7 +119,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     if (ctx == NULL) {
         ctx = ngx_pcalloc(s->connection->pool, sizeof(ngx_rtmp_ffmpeg_ctx_t));
         ngx_rtmp_set_ctx(s, ctx, ngx_rtmp_ffmpeg_module);
-        ctx->stream_id.len = v->name.len;
+        ctx->stream_id.len = ngx_strlen(v->name);
         ctx->stream_id.data = ngx_palloc(s->connection->pool, ctx->stream_id.len + 1);
         if (ctx->stream_id.data == NULL) {
             return NGX_ERROR;
