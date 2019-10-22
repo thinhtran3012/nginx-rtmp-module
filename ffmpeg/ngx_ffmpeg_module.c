@@ -265,10 +265,10 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         ctx->out_av_format_context = NULL;
         avformat_alloc_output_context2(&(ctx->out_av_format_context), NULL, NULL, (const char*)ctx->playlist.data);
         if(!ctx->out_av_format_context){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output context.");
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output format context.");
             return NGX_ERROR;
         }
-        ctx->out_av_format_context->nb_streams = -1;
+        // ctx->out_av_format_context->nb_streams = -1;
     }    
     ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "mpegts", 0);  
     if(ret < 0){
