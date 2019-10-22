@@ -187,9 +187,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     p[0] = in->buf->pos[4];
     p[1] = in->buf->pos[3];
     p[2] = in->buf->pos[2];
-    p[3] = 0;
-
-    ctx->has_video = 1;
+    p[3] = 0;    
 
     /* skip RTMP & H264 headers */
 
@@ -237,7 +235,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     // path/stream_id
     ctx->playlist.len = facf->path.len + 1 + ctx->stream_id.len + sizeof("/index.m3u8");
     ctx->playlist.data = ngx_palloc(s->connection->pool, ctx->playlist.len + 1);
-    p = ngx_cpymem(ctx->playlist.data, hacf->path.data, hacf->path.len);
+    p = ngx_cpymem(ctx->playlist.data, facf->path.data, facf->path.len);
     if (p[-1] != '/') {
         *p++ = '/';
     }
