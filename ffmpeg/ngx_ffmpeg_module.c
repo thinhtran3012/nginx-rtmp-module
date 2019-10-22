@@ -145,7 +145,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
                       "ffmpeg: no output format");
         return NGX_ERROR;
     }
-    
+
     next:
     return next_publish(s, v);
 }
@@ -202,9 +202,11 @@ static void *
 ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf)
 {
     ngx_rtmp_ffmpeg_app_conf_t *conf;
-    if(!conf){
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_rtmp_ffmpeg_app_conf_t));
+    if (conf == NULL) {
         return NULL;
     }
+    conf->ffmpeg = NGX_CONF_UNSET;
     return conf;
 }
 
