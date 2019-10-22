@@ -118,6 +118,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
 
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: in ffmpeg module 1");
     //ignore if this module is not enable
     if (facf == NULL || !facf->ffmpeg) {
         goto next;
