@@ -122,14 +122,12 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
-    codec_ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_codec_module);
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1 ");
+    codec_ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_codec_module);    
     if (facf == NULL || !facf->ffmpeg || ctx == NULL || codec_ctx == NULL ||
         codec_ctx->avc_header == NULL || h->mlen < 5)
     {
         return NGX_OK;
-    }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2 ");
+    }    
 
     /* Only H264 is supported */
     if (codec_ctx->video_codec_id != NGX_RTMP_VIDEO_H264) {
@@ -137,6 +135,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
 
     //video is always in track 0
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2 ");
     if(!ctx->out_av_format_context->streams[0]){
         AVStream *out_av_stream;
         out_av_stream = avformat_new_stream(ctx->out_av_format_context, NULL);
@@ -145,8 +144,10 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
             return NGX_ERROR;
         }        
     }
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3 ");
     if(!ctx->is_codec_opened){
         ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_H264);
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 31 ");
         if(!ctx->out_av_codec){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not find approriate encoder.");
             return NGX_ERROR;
@@ -171,6 +172,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         }
         ctx->is_codec_opened = 1;
     }
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 4 ");
     ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0); 
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set options.");
