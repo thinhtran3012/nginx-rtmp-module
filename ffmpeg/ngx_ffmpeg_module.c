@@ -118,7 +118,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
 
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: in ffmpeg module 1");
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1");
     //ignore if this module is not enable
     if (facf == NULL || !facf->ffmpeg) {
         goto next;
@@ -126,7 +126,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     ngx_log_debug2(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
                    "ffmpeg: publish: name='%s' type='%s'",
                    v->name, v->type);
-
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2");
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
     if (ctx == NULL) {
         ctx = ngx_pcalloc(s->connection->pool, sizeof(ngx_rtmp_ffmpeg_ctx_t));
@@ -138,7 +138,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         }
         *ngx_cpymem(ctx->stream_id.data, v->name, ctx->stream_id.len) = 0;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: in ffmpeg module");
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3");
     //need to init ffmpeg's parameters
     av_output_format = av_guess_format("hls", NULL, NULL);
     if(!av_output_format){
