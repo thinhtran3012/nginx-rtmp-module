@@ -48,6 +48,8 @@ typedef struct{
     AVCodec                             *out_av_codec;
     AVCodecContext                      *out_av_codec_context;
     int                                 is_codec_opened;
+    int                                 is_video_stream_opened;
+    int                                 video_stream_index;
     AVOutputFormat                      *out_av_format;
 } ngx_rtmp_ffmpeg_ctx_t;
 
@@ -136,13 +138,16 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
 
     //video is always in track 0
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2 ");
-    if(!ctx->out_av_format_context->streams[0]){
+    if(!ctx->is_video_stream_opened){
         AVStream *out_av_stream;
         out_av_stream = avformat_new_stream(ctx->out_av_format_context, NULL);
         if(!out_av_stream){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not create video stream");
             return NGX_ERROR;
         }        
+        ctx->is_video_stream_opened = 1;
+        ctx->out_av_format_context->nb_streams += 1;
+        ctx->video_stream_index = ctx->out_av_format_context->nb_streams;
     }
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3 ");
     if(!ctx->is_codec_opened){
@@ -255,12 +260,15 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     ctx->playlist.len = p - ctx->playlist.data;
     *p = 0;
     //need to init ffmpeg's parameters
-    ctx->out_av_format_context = NULL;
-    avformat_alloc_output_context2(&(ctx->out_av_format_context), NULL, NULL, (const char*)ctx->playlist.data);
     if(!ctx->out_av_format_context){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output context.");
-        return NGX_ERROR;
-    }
+        ctx->out_av_format_context = NULL;
+        avformat_alloc_output_context2(&(ctx->out_av_format_context), NULL, NULL, (const char*)ctx->playlist.data);
+        if(!ctx->out_av_format_context){
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output context.");
+            return NGX_ERROR;
+        }
+        ctx->out_av_format_context->nb_streams = -1;
+    }    
     ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "mpegts", 0);  
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", av_err2str(ret));        
