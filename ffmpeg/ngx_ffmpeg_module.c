@@ -3,6 +3,8 @@
  * TODO:
  * - Build FFmpeg as a nginx module
  * - Generate HLS/Mpeg DASH/fMP4 by FFmpeg from RTMP message
+ * - We only care about publish and close stream action
+ * - We will fork a thread to handle rtmp messages
  * Advance Job:
  * - Multi worker
  * */
@@ -113,113 +115,6 @@ ngx_module_t  ngx_rtmp_ffmpeg_module = {
 
 
 static ngx_int_t
-ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
-    ngx_chain_t *in)
-{
-    ngx_rtmp_ffmpeg_app_conf_t        *facf;
-    ngx_rtmp_ffmpeg_ctx_t             *ctx;
-    ngx_rtmp_codec_ctx_t              *codec_ctx;
-    uint8_t                           ftype, htype;
-    int                               ret;
-    u_char                            *p;
-
-    facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
-    ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
-    codec_ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_codec_module);    
-    if (facf == NULL || !facf->ffmpeg || ctx == NULL || codec_ctx == NULL ||
-        codec_ctx->avc_header == NULL || h->mlen < 5)
-    {
-        return NGX_OK;
-    }    
-
-    /* Only H264 is supported */
-    if (codec_ctx->video_codec_id != NGX_RTMP_VIDEO_H264) {
-        return NGX_OK;
-    }
-
-    //video is always in track 0    
-    if(!ctx->is_video_stream_opened){
-        AVStream *out_av_stream;
-        out_av_stream = avformat_new_stream(ctx->out_av_format_context, NULL);        
-        if(!out_av_stream){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not create video stream");
-            return NGX_ERROR;
-        }        
-        ctx->is_video_stream_opened = 1;
-        ctx->nb_streams += 1;
-        ctx->video_stream_index = ctx->nb_streams;
-    }    
-    if(!ctx->is_codec_opened){
-        ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_H264);        
-        if(!ctx->out_av_codec){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not find approriate encoder.");
-            return NGX_ERROR;
-        }
-        ctx->out_av_codec_context = avcodec_alloc_context3(ctx->out_av_codec);
-        if(!ctx->out_av_codec_context){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not allocate output codec context.");
-            return NGX_ERROR;
-        }
-
-        ctx->out_av_codec_context->bit_rate = 40000;
-        ctx->out_av_codec_context->width = codec_ctx->width;
-        ctx->out_av_codec_context->height = codec_ctx->height;
-        ctx->out_av_codec_context->time_base = (AVRational){1, codec_ctx->frame_rate};
-        ctx->out_av_codec_context->gop_size = 10;
-        ctx->out_av_codec_context->max_b_frames = 1;
-        ctx->out_av_codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
-        ret = avcodec_open2(ctx->out_av_codec_context, ctx->out_av_codec, NULL);
-        if(ret < 0){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not open output codec context.");
-            return NGX_ERROR;
-        }
-        ctx->is_codec_opened = 1;
-    }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 4 ");
-    ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0); 
-    if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set options.");
-        return NGX_ERROR;
-    }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 5 ");
-    AVDictionary* opts = NULL;
-    ret = avformat_write_header(ctx->out_av_format_context, &opts);
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 6 ");
-    if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not write header.");
-        return NGX_ERROR;
-    }
-    if (in->buf->last - in->buf->pos < 5) {
-        return NGX_ERROR;
-    }
-    ftype = (in->buf->pos[0] & 0xf0) >> 4;
-    /* skip AVC config */
-
-    htype = in->buf->pos[1];
-    if (htype != 1) {
-        return NGX_OK;
-    }
-
-    p[0] = in->buf->pos[4];
-    p[1] = in->buf->pos[3];
-    p[2] = in->buf->pos[2];
-    p[3] = 0;    
-
-    /* skip RTMP & H264 headers */
-
-    in->buf->pos += 5;
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: in video stream.");
-    return NGX_OK;
-}
-
-static ngx_int_t
-ngx_rtmp_ffmpeg_audio(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
-    ngx_chain_t *in)
-{
-    return NGX_OK;
-}
-
-static ngx_int_t
 ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
 {
     ngx_rtmp_ffmpeg_app_conf_t          *facf;
@@ -295,38 +190,18 @@ ngx_rtmp_ffmpeg_stream_begin(ngx_rtmp_session_t *s, ngx_rtmp_stream_begin_t *v)
     return next_stream_begin(s, v);
 }
 
-static ngx_int_t
-ngx_rtmp_ffmpeg_stream_eof(ngx_rtmp_session_t *s, ngx_rtmp_stream_eof_t *v)
-{
-    return next_stream_eof(s, v);
-}
-
 static ngx_int_t ngx_rtmp_ffmpeg_postconfiguration(ngx_conf_t *cf)
 {
     ngx_rtmp_core_main_conf_t   *cmcf;
     ngx_rtmp_handler_pt         *h;
 
     cmcf = ngx_rtmp_conf_get_module_main_conf(cf, ngx_rtmp_core_module);
-    
-    /*For video messages*/
-    h = ngx_array_push(&cmcf->events[NGX_RTMP_MSG_VIDEO]);
-    *h = ngx_rtmp_ffmpeg_video;
-
-    /*For audio messages*/
-    h = ngx_array_push(&cmcf->events[NGX_RTMP_MSG_AUDIO]);
-    *h = ngx_rtmp_ffmpeg_audio;
 
     next_publish = ngx_rtmp_publish;
     ngx_rtmp_publish = ngx_rtmp_ffmpeg_publish;
 
     next_close_stream = ngx_rtmp_close_stream;
     ngx_rtmp_close_stream = ngx_rtmp_ffmpeg_close_stream;
-
-    next_stream_begin = ngx_rtmp_stream_begin;
-    ngx_rtmp_stream_begin = ngx_rtmp_ffmpeg_stream_begin;
-
-    next_stream_eof = ngx_rtmp_stream_eof;
-    ngx_rtmp_stream_eof = ngx_rtmp_ffmpeg_stream_eof;
 
     return NGX_OK;
 }
