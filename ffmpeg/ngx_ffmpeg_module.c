@@ -154,7 +154,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ctx->video_stream_index = ctx->nb_streams;
     }    
     if(!ctx->is_codec_opened){
-        ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_H264);        
+        ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);        
         if(!ctx->out_av_codec){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not find approriate encoder.");
             return NGX_ERROR;
