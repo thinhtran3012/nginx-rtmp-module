@@ -209,13 +209,13 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         size += bsize;
     }
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1");
-    AVPacket *pkt = NULL;
-    // av_init_packet(pkt);
-    pkt = av_packet_alloc();
-    if(!pkt){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc packet.");
-        return NGX_ERROR;
-    }
+    AVPacket *pkt;
+    av_init_packet(pkt);
+    // pkt = av_packet_alloc();
+    // if(!pkt){
+    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc packet.");
+    //     return NGX_ERROR;
+    // }
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2");
     pkt->data = (uint8_t *)p;
     pkt->size = size;
