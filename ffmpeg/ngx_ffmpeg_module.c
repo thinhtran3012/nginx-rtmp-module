@@ -177,16 +177,13 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not open output codec context.");
             return NGX_ERROR;
         }
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 4 ");
         ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0); 
         if(ret < 0){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set options.");
             return NGX_ERROR;
         }
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 5 ");
         AVDictionary* opts = NULL;
         ret = avformat_write_header(ctx->out_av_format_context, &opts);
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 6 ");
         if(ret < 0){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not write header.");
             // return NGX_ERROR;
@@ -213,7 +210,12 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1");
     AVPacket *pkt = NULL;
-    av_init_packet(pkt);
+    // av_init_packet(pkt);
+    pkt = av_packet_alloc();
+    if(!pkt){
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc packet.");
+        return NGX_ERROR;
+    }
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2");
     pkt->data = (uint8_t *)p;
     pkt->size = size;
@@ -232,6 +234,12 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's a frame.");
     }else{
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's not a frame.");
+    }
+    if(!pkt){
+        av_packet_free(&pkt);
+    }
+    if(!frame){
+        av_frame_free(&frame);
     }
     return NGX_OK;
 }
