@@ -208,7 +208,6 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         p = ngx_cpymem(p, in->buf->pos, bsize);
         size += bsize;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1");
     AVPacket *pkt;
     // av_init_packet(pkt);
     pkt = av_packet_alloc();
@@ -216,25 +215,23 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc packet.");
         return NGX_ERROR;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2");
     pkt->data = (uint8_t *)p;
     pkt->size = size;
     frame = av_frame_alloc();
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3");
     if(!frame){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc frame.");
         return NGX_ERROR;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 4");
     ret = avcodec_decode_video2(ctx->out_av_codec_context, frame, &got_frame, pkt);
     if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not got frame.");
-    }
-    if(got_frame){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's a frame.");
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not got frame %s", av_err2str(ret));
     }else{
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's not a frame.");
-    }
+        if(got_frame){
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's a frame.");
+        }else{
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's not a frame.");
+        }
+    }    
     if(!pkt){
         av_packet_free(&pkt);
     }
