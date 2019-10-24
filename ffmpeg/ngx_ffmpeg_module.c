@@ -195,6 +195,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
         
     //how to decode this data?
+    in->buf->pos += 5;
     p = buffer;
     size = 0;
 
