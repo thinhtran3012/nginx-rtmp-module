@@ -224,7 +224,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
     ret = avcodec_decode_video2(ctx->out_av_codec_context, frame, &got_frame, pkt);
     if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not got frame %s \n", av_err2str(ret));
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not got frame %s %d\n", av_err2str(ret)), ret;
     }else{
         if(got_frame){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's a frame.");
