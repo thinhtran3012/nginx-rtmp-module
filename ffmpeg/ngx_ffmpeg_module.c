@@ -375,7 +375,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     ngx_rtmp_ffmpeg_ctx_t               *ctx;
     u_char                              *p;
     int                                 ret;
-    ngx_str_t                          *in_file;
+    ngx_str_t                          in_file;
 
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);    
@@ -411,15 +411,15 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     *p = 0;
     //need to init ffmpeg's parameters
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %d.", sizeof("rtmp://localhost/ffmpeg/"));
-    in_file->len = sizeof("rtmp://localhost/ffmpeg/") + ctx->stream_id.len + 1;
+    in_file.len = sizeof("rtmp://localhost/ffmpeg/") + ctx->stream_id.len + 1;
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
-    in_file->data = ngx_palloc(s->connection->pool, in_file->len);
+    in_file.data = ngx_palloc(s->connection->pool, in_file->len);
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3.");
-    p = ngx_cpymem(in_file->data, "rtmp://localhost/ffmpeg/", sizeof("rtmp://localhost/ffmpeg/") - 1);
+    p = ngx_cpymem(in_file.data, "rtmp://localhost/ffmpeg/", sizeof("rtmp://localhost/ffmpeg/") - 1);
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 4.");
     p = ngx_cpymem(p, ctx->stream_id.data, ctx->stream_id.len);
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 5.");
-    in_file->len = p - in_file->data;
+    in_file.len = p - in_file.data;
     *p = 0;
     if(!ctx->in_av_format_context){
         ret = avformat_open_input(&(ctx->in_av_format_context), in_file->data, NULL, NULL);
