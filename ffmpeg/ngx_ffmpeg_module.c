@@ -431,6 +431,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
 static ngx_int_t
 ngx_rtmp_ffmpeg_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
 {
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: close stream.");
     return next_close_stream(s, v);
 }
 
