@@ -147,10 +147,11 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         codec_ctx->avc_header == NULL || h->mlen < 5)
     {
         return NGX_OK;
-    }    
+    }   
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1."); 
     if(!ctx->in_av_format_context){        
         ret = avformat_open_input(&(ctx->in_av_format_context), test, NULL, NULL);
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
         if(ret < 0){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not open rtmp channel %s.", av_err2str(ret));
         }else{
