@@ -138,7 +138,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     AVFrame                           *frame;
     int                               got_frame = 0;
     AVStream                          *out_av_stream;
-    const char                        *test = "rtmp://35.247.135.97/ffmpeg/live_ajYVwBtyFc";
+    const char                        *test = "rtmp://localhost:1935/ffmpeg/live_ajYVwBtyFc";
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
