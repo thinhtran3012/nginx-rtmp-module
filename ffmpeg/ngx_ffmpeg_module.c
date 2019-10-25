@@ -413,7 +413,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %d.", sizeof("rtmp://localhost/ffmpeg/"));
     in_file.len = sizeof("rtmp://localhost/ffmpeg/") + ctx->stream_id.len + 1;
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
-    in_file.data = ngx_palloc(s->connection->pool, in_file->len);
+    in_file.data = ngx_palloc(s->connection->pool, in_file.len);
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3.");
     p = ngx_cpymem(in_file.data, "rtmp://localhost/ffmpeg/", sizeof("rtmp://localhost/ffmpeg/") - 1);
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 4.");
@@ -422,7 +422,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     in_file.len = p - in_file.data;
     *p = 0;
     if(!ctx->in_av_format_context){
-        ret = avformat_open_input(&(ctx->in_av_format_context), in_file->data, NULL, NULL);
+        ret = avformat_open_input(&(ctx->in_av_format_context), in_file.data, NULL, NULL);
         if(ret < 0){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not open rtmp channel %s.", av_err2str(ret));
         }else{
@@ -430,7 +430,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
             if(ret < 0){
                 ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not get rtmp info %s.", av_err2str(ret));
             }else{
-                av_dump_format(ctx->in_av_format_context, 0, in_file->data, 0);
+                av_dump_format(ctx->in_av_format_context, 0, in_file.data, 0);
             }
         }
 
