@@ -164,7 +164,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ctx->video_stream_index = ctx->nb_streams;
     }    
     if(!ctx->is_codec_opened){
-        ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_MPEG4);        
+        ctx->out_av_codec = avcodec_find_encoder(AV_CODEC_ID_H264);        
         if(!ctx->out_av_codec){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not find approriate encoder.");
             return NGX_ERROR;
@@ -402,6 +402,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: no output format.");
         return NGX_ERROR;
     }
+    ctx->out_av_format_context->oformat = ctx->out_av_format;
     if (ngx_rtmp_ffmpeg_ensure_directory(s) != NGX_OK) {
         return NGX_ERROR;
     }    
