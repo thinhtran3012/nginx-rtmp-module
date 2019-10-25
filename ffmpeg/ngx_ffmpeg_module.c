@@ -238,7 +238,8 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         return NGX_ERROR;
     }
     pkt->data = p;
-    pkt->size = size;    
+    pkt->size = size; 
+    pkt->pts = av_rescale_q(ctx->out_av_codec_context->coded_frame->pts, ctx->out_av_codec_context->time_base, codec_ctx->frame_rate);
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     frame = av_frame_alloc();
     if(!frame){
@@ -257,7 +258,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data %s.", av_err2str(ret));
     //     return NGX_ERROR;
     // }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Write data ok.");
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Write data ok.");
     if(!pkt){
         av_packet_free(&pkt);
     }
