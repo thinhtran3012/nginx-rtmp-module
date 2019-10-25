@@ -441,9 +441,9 @@ ngx_rtmp_ffmpeg_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
     ngx_rtmp_ffmpeg_ctx_t       *ctx;
     ngx_rtmp_ffmpeg_app_conf_t  *facf;
 
-    facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_facf_module);
+    facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
 
-    ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_facf_module);
+    ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
 
     if (facf == NULL || !facf->ffmpeg || ctx == NULL) {
         goto next;
