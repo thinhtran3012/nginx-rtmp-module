@@ -54,7 +54,7 @@ typedef struct{
     int                                 is_video_stream_opened;
     int                                 video_stream_index;
     AVOutputFormat                      *out_av_format;
-    int                                 nb_streams;//number of stream in file
+    int                                 nb_streams;//number of stream in file    
 } ngx_rtmp_ffmpeg_ctx_t;
 
 static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
@@ -311,7 +311,7 @@ ngx_rtmp_ffmpeg_ensure_directory(ngx_rtmp_session_t *s)
         len--;
     }
     *ngx_snprintf(path, sizeof(path) - 1, "%*s/%V", len, facf->path.data,
-                  &ctx->name) = 0;
+                  &ctx->stream_id) = 0;
     //check if nested directory is exist
     if (ngx_file_info(path, &fi) != NGX_FILE_ERROR) {
         if (ngx_is_dir(&fi)) {
