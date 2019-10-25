@@ -203,11 +203,18 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set options.");
             return NGX_ERROR;
         }
+        if(!(ctx->out_av_format_context->oformat->flags & AVFMT_NOFILE)){
+            ret = avio_open(&(ctx->out_av_format_context->pb), ctx->playlist.data, AVIO_FLAG_WRITE);
+            if(ret < 0){
+                ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not open output file %s\n", av_err2str(ret));
+                return NGX_ERROR;
+            }
+        }
         AVDictionary* opts = NULL;
         ret = avformat_write_header(ctx->out_av_format_context, &opts);
         if(ret < 0){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not write header %s\n", av_err2str(ret));
-            // return NGX_ERROR;
+            return NGX_ERROR;
         }
         ctx->is_codec_opened = 1;
     }    
@@ -258,8 +265,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data %s.", av_err2str(ret));
         return NGX_ERROR;
-    }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Write data ok.");
+    }    
     if(!pkt){
         av_packet_free(&pkt);
     }
@@ -410,6 +416,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         }
         ctx->nb_streams = -1;
     }    
+     
     ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "mpegts", 0);  
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", av_err2str(ret));        
@@ -431,7 +438,19 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
 static ngx_int_t
 ngx_rtmp_ffmpeg_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
 {
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: close stream.");
+    ngx_rtmp_ffmpeg_ctx_t       *ctx;
+    ngx_rtmp_ffmpeg_app_conf_t  *facf;
+
+    facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_facf_module);
+
+    ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_facf_module);
+
+    if (facf == NULL || !facf->ffmpeg || ctx == NULL) {
+        goto next;
+    }
+    av_write_trailer(ctx->out_av_format_context);
+    avfor
+    
     return next_close_stream(s, v);
 }
 
