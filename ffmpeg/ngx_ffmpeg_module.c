@@ -248,6 +248,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     pkt->size = size; 
     pkt->pts = pkt->dts = 0;
     pkt->flags |= AV_PKT_FLAG_KEY;
+    pkt->duration = 1;
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     // frame = av_frame_alloc();
     // if(!frame){
@@ -448,9 +449,9 @@ ngx_rtmp_ffmpeg_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
     if (facf == NULL || !facf->ffmpeg || ctx == NULL) {
         goto next;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");
-    av_write_trailer(ctx->out_av_format_context);    
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");
+    // av_write_trailer(ctx->out_av_format_context);    
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
     
     next:
     return next_close_stream(s, v);
