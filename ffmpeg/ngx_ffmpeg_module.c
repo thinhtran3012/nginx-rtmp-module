@@ -262,7 +262,7 @@ ngx_rtmp_ffmpeg_audio(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
 /**
  * Make sure data directory is exist before writting data
  **/
-static nginx_int_t
+static ngx_int_t
 ngx_rtmp_ffmpeg_ensure_directory(ngx_rtmp_session_t *s)
 {
     static u_char               path[NGX_MAX_PATH + 1];
