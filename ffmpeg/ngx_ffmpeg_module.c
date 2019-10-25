@@ -195,7 +195,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         AVDictionary* opts = NULL;
         ret = avformat_write_header(ctx->out_av_format_context, &opts);
         if(ret < 0){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not write header.");
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not write header %s\n", av_err2str(ret));
             // return NGX_ERROR;
         }
         ctx->is_codec_opened = 1;
