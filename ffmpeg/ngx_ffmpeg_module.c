@@ -30,7 +30,7 @@ static ngx_rtmp_stream_begin_pt         next_stream_begin;
 static ngx_rtmp_stream_eof_pt           next_stream_eof;
 
 #define NGX_RTMP_FFMPEG_DIR_ACCESS        0744
-
+#define NGX_RTMP_FFMPEG_BUFSIZE           (1024*1024)
 
 static ngx_int_t ngx_rtmp_ffmpeg_postconfiguration(ngx_conf_t *cf);
 static void * ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf);
@@ -132,7 +132,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     uint8_t                           ftype, htype;
     int                               ret;
     u_char                            *p;
-    static u_char                     buffer[1024 * 1024];
+    static u_char                     buffer[NGX_RTMP_FFMPEG_BUFSIZE];
     size_t                            size, bsize;
     AVFrame                           *frame;
     int                               got_frame = 0;
