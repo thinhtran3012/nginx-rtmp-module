@@ -376,6 +376,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     u_char                              *p;
     int                                 ret;
     ngx_str_t                          in_file;
+    const char                          *test = "rtmp://localhost/ffmpeg/live_ajYVwBtyFc";
 
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);    
@@ -418,7 +419,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     *p = 0;
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", in_file.data);
     if(!ctx->in_av_format_context){        
-        ret = avformat_open_input(&(ctx->in_av_format_context), in_file.data, NULL, NULL);
+        ret = avformat_open_input(&(ctx->in_av_format_context), test, NULL, NULL);
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");
         if(ret < 0){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not open rtmp channel %s.", av_err2str(ret));
@@ -427,7 +428,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
             if(ret < 0){
                 ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not get rtmp info %s.", av_err2str(ret));
             }else{
-                av_dump_format(ctx->in_av_format_context, 0, in_file.data, 0);
+                av_dump_format(ctx->in_av_format_context, 0, test, 0);
             }
         }
 
