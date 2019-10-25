@@ -239,18 +239,24 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
     pkt->data = (uint8_t *)p;
     pkt->size = size;
-    frame = av_frame_alloc();
-    if(!frame){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc frame.");
-        return NGX_ERROR;
-    }
-    ret = avcodec_send_packet(ctx->out_av_codec_context, pkt);
+    // frame = av_frame_alloc();
+    // if(!frame){
+    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc frame.");
+    //     return NGX_ERROR;
+    // }
+    // ret = avcodec_send_packet(ctx->out_av_codec_context, pkt);
+    // if(ret < 0){
+    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s \n", av_err2str(ret));
+    //     return NGX_ERROR;
+    // }else{
+    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.");
+    // }
+    ret = av_interleaved_write_frame(ctx->out_av_format_context, pkt);
     if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s.", av_err2str(ret));
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data.");
         return NGX_ERROR;
-    }else{
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.");
     }
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Write data ok.");
     if(!pkt){
         av_packet_free(&pkt);
     }
