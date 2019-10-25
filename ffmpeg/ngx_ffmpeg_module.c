@@ -478,7 +478,7 @@ ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_value(conf->ffmpeg, prev->ffmpeg, 0);
     ngx_conf_merge_str_value(conf->type, prev->type, "hls");//default we use hls format
     ngx_conf_merge_str_value(conf->path, prev->path, "");
-    ngx_conf_merge_value(conf->nested, prev->nested, 1;
+    ngx_conf_merge_value(conf->nested, prev->nested, 1);
 
     return NGX_CONF_OK;
 }
