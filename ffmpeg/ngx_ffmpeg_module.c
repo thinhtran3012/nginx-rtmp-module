@@ -253,7 +253,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     // }
     ret = av_interleaved_write_frame(ctx->out_av_format_context, pkt);
     if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data.");
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data %s.", av_err2str(ret));
         return NGX_ERROR;
     }
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Write data ok.");
