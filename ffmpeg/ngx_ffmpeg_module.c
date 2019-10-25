@@ -411,8 +411,9 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     *p = 0;
     //need to init ffmpeg's parameters
     in_file->data = ngx_palloc(s->connection->pool, sizeof("rtmp://localhost/ffmpeg/") + ctx->stream_id.len + 1);
-    p = ngx_cpymem(p, in_file->data, "rtmp://localhost/ffmpeg/", sizeof("rtmp://localhost/ffmpeg/") - 1);
-    p = ngx_cpymem(p, in_file->data, ctx->stream_id.data, ctx->stream_id.len);
+    p = ngx_cpymem(in_file->data, "rtmp://localhost/ffmpeg/", sizeof("rtmp://localhost/ffmpeg/") - 1);
+    p = ngx_cpymem(p, ctx->stream_id.data, ctx->stream_id.len);
+    in_file.len = p - in_file->data;
     *p = 0;
     if(!ctx->in_av_format_context){
         ret = avformat_open_input(&(ctx->in_av_format_context), in_file->data, NULL, NULL);
