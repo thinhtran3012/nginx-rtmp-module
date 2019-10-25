@@ -410,9 +410,13 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     ctx->playlist.len = p - ctx->playlist.data;
     *p = 0;
     //need to init ffmpeg's parameters
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1");
     in_file->data = ngx_palloc(s->connection->pool, sizeof("rtmp://localhost/ffmpeg/") + ctx->stream_id.len + 1);
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2");
     p = ngx_cpymem(in_file->data, "rtmp://localhost/ffmpeg/", sizeof("rtmp://localhost/ffmpeg/") - 1);
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 3");
     p = ngx_cpymem(p, ctx->stream_id.data, ctx->stream_id.len);
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 4");
     in_file->len = p - in_file->data;
     *p = 0;
     if(!ctx->in_av_format_context){
