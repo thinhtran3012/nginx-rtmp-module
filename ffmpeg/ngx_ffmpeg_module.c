@@ -448,8 +448,7 @@ ngx_rtmp_ffmpeg_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
     if (facf == NULL || !facf->ffmpeg || ctx == NULL) {
         goto next;
     }
-    av_write_trailer(ctx->out_av_format_context);
-    avfor
+    av_write_trailer(ctx->out_av_format_context);    
     
     return next_close_stream(s, v);
 }
