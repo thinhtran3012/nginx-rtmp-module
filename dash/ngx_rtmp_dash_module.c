@@ -1071,7 +1071,7 @@ ngx_rtmp_dash_append(ngx_rtmp_session_t *s, ngx_chain_t *in,
     }
 
     t->latest_pres_time = timestamp;
-
+ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "dash: message size: %d.", size);
     if (t->sample_count < NGX_RTMP_DASH_MAX_SAMPLES) {
 
         if (ngx_write_fd(t->fd, buffer, size) == NGX_ERROR) {
