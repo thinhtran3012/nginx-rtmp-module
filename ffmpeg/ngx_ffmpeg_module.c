@@ -29,6 +29,8 @@ static ngx_rtmp_close_stream_pt         next_close_stream;
 static ngx_rtmp_stream_begin_pt         next_stream_begin;
 static ngx_rtmp_stream_eof_pt           next_stream_eof;
 
+#define NGX_RTMP_FFMPEG_DIR_ACCESS        0744
+
 
 static ngx_int_t ngx_rtmp_ffmpeg_postconfiguration(ngx_conf_t *cf);
 static void * ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf);
@@ -38,6 +40,7 @@ typedef struct {
     ngx_str_t                           type; /*hls/mpeg dash/fmp4*/
     ngx_flag_t                          ffmpeg;
     ngx_str_t                           path; /*Path for saving data*/
+    ngx_flag_t                          nested;/*Nested directory*/
 } ngx_rtmp_ffmpeg_app_conf_t;
 
 typedef struct{
@@ -72,12 +75,19 @@ static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
         NULL
     },
     {
-        ngx_string("path"),
+        ngx_string("ffmpeg_path"),
         NGX_RTMP_MAIN_CONF|NGX_RTMP_SRV_CONF|NGX_RTMP_APP_CONF|NGX_CONF_TAKE1,
         ngx_conf_set_str_slot,
         NGX_RTMP_APP_CONF_OFFSET,
         offsetof(ngx_rtmp_ffmpeg_app_conf_t, path),
         NULL
+    },
+    { ngx_string("ffmpeg_nested"),
+      NGX_RTMP_MAIN_CONF|NGX_RTMP_SRV_CONF|NGX_RTMP_APP_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_flag_slot,
+      NGX_RTMP_APP_CONF_OFFSET,
+      offsetof(ngx_rtmp_ffmpeg_app_conf_t, nested),
+      NULL 
     },
     ngx_null_command
 };
@@ -249,6 +259,89 @@ ngx_rtmp_ffmpeg_audio(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     return NGX_OK;
 }
 
+/**
+ * Make sure data directory is exist before writting data
+ **/
+static nginx_int_t
+ngx_rtmp_ffmpeg_ensure_directory(ngx_rtmp_session_t *s)
+{
+    static u_char               path[NGX_MAX_PATH + 1];
+    ngx_rtmp_ffmpeg_app_conf_t  *facf;
+    ngx_file_info_t             fi;
+    ngx_rtmp_ffmpeg_ctx_t       *ctx;
+    size_t                      len;
+
+    facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
+    *ngx_snprintf(path, sizeof(path) - 1, "%V", &facf->path) = 0;
+    if (ngx_file_info(path, &fi) == NGX_FILE_ERROR) {
+        if (ngx_errno != NGX_ENOENT) {
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, ngx_errno,
+                          "ffmpeg: " ngx_file_info_n " failed on '%V'",
+                          &facf->path);
+            return NGX_ERROR;
+        }
+        /* ENOENT */
+
+        if (ngx_create_dir(path, NGX_RTMP_FFMPEG_DIR_ACCESS) == NGX_FILE_ERROR) {
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, ngx_errno,
+                          "ffmpeg: " ngx_create_dir_n " failed on '%V'",
+                          &facf->path);
+            return NGX_ERROR;
+        }
+
+        ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
+                       "ffmpeg: directory '%V' created", &facf->path);
+    }else{
+        if (!ngx_is_dir(&fi)) {
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                          "ffmpeg: '%V' exists and is not a directory",
+                          &facf->path);
+            return  NGX_ERROR;
+        }
+
+        ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
+                       "ffmpeg: directory '%V' exists", &facf->path);
+    }
+    if (!facf->nested) {
+        return NGX_OK;
+    }
+    ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
+    len = facf->path.len;
+    if (facf->path.data[len - 1] == '/') {
+        len--;
+    }
+    *ngx_snprintf(path, sizeof(path) - 1, "%*s/%V", len, facf->path.data,
+                  &ctx->name) = 0;
+    //check if nested directory is exist
+    if (ngx_file_info(path, &fi) != NGX_FILE_ERROR) {
+        if (ngx_is_dir(&fi)) {
+            ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
+                           "ffmpeg: directory '%s' exists", path);
+            return NGX_OK;
+        }
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                      "ffmpeg: '%s' exists and is not a directory", path);
+
+        return  NGX_ERROR;
+    }
+    if (ngx_errno != NGX_ENOENT) {
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, ngx_errno,
+                      "ffmpeg: " ngx_file_info_n " failed on '%s'", path);
+        return NGX_ERROR;
+    }
+    //create nested directory if need
+    if (ngx_create_dir(path, NGX_RTMP_FFMPEG_DIR_ACCESS) == NGX_FILE_ERROR) {
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, ngx_errno,
+                      "ffmpeg: " ngx_create_dir_n " failed on '%s'", path);
+        return NGX_ERROR;
+    }
+
+    ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
+                   "ffmpeg: directory '%s' created", path);
+
+    return NGX_OK;
+}
+
 static ngx_int_t
 ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
 {
@@ -307,6 +400,9 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     ctx->out_av_format = av_guess_format("hls", NULL, NULL);
     if(!ctx->out_av_format){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: no output format.");
+        return NGX_ERROR;
+    }
+    if (ngx_rtmp_ffmpeg_ensure_directory(s) != NGX_OK) {
         return NGX_ERROR;
     }    
     next:
@@ -370,6 +466,7 @@ ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf)
         return NULL;
     }
     conf->ffmpeg = NGX_CONF_UNSET;
+    conf->nested = NGX_CONF_UNSET;
     return conf;
 }
 
@@ -381,6 +478,7 @@ ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_value(conf->ffmpeg, prev->ffmpeg, 0);
     ngx_conf_merge_str_value(conf->type, prev->type, "hls");//default we use hls format
     ngx_conf_merge_str_value(conf->path, prev->path, "");
+    ngx_conf_merge_value(conf->nested, prev->nested, 1;
 
     return NGX_CONF_OK;
 }
