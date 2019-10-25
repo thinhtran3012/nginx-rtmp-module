@@ -248,7 +248,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     ret = avcodec_send_packet(ctx->out_av_codec_context, pkt);
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s \n", av_err2str(ret));
-        return NGX_ERROR;
+        // return NGX_ERROR;
     }else{
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.");
     }
