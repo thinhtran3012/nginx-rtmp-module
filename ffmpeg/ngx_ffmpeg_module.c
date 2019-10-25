@@ -182,6 +182,11 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ctx->out_av_codec_context->gop_size = 10;
         ctx->out_av_codec_context->max_b_frames = 1;
         ctx->out_av_codec_context->pix_fmt = AV_PIX_FMT_YUV420P;
+        ret = av_opt_set(ctx->out_av_codec_context->priv_data, "preset", "slow", 0);  
+        if(ret < 0){
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set output codec context priv data %s.", av_err2str(ret));
+            return NGX_ERROR;
+        }
         ret = avcodec_open2(ctx->out_av_codec_context, ctx->out_av_codec, NULL);
         if(ret < 0){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not open output codec context.");
@@ -385,6 +390,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     //need to init ffmpeg's parameters
     if(!ctx->out_av_format_context){
         ctx->out_av_format_context = NULL;
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: $s.", ctx->playlist.data);
         avformat_alloc_output_context2(&(ctx->out_av_format_context), NULL, NULL, (const char*)ctx->playlist.data);
         if(!ctx->out_av_format_context){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output format context.");
