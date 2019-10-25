@@ -1905,7 +1905,8 @@ ngx_rtmp_hls_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
 
     /* proceed only with PICT */
-
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                          "hls: %d-%d", ftype, htype);
     if (htype != 1) {
         return NGX_OK;
     }
