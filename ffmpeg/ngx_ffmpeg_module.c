@@ -244,16 +244,13 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc frame.");
         return NGX_ERROR;
     }
-    ret = avcodec_decode_video2(ctx->out_av_codec_context, frame, &got_frame, pkt);
+    ret = avcodec_send_packet(ctx->out_av_codec_context, pkt);
     if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not got frame %s %d\n", av_err2str(ret), ret);
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s.", av_err2str(ret));
+        return NGX_ERROR;
     }else{
-        if(got_frame){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's a frame.");
-        }else{
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: it's not a frame.");
-        }
-    }    
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.");
+    }
     if(!pkt){
         av_packet_free(&pkt);
     }
