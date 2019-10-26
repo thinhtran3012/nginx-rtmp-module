@@ -320,7 +320,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         return NGX_ERROR;
     }
     pkt->data = (uint8_t *)out.start;
-    pkt->size = (out.end - out.start);     
+    pkt->size = (out.last - out.start);     
     pkt->pts = (int64_t) h->timestamp;       
     pkt->dts = pkt->pts;    
     pkt->flags |= AV_PKT_FLAG_KEY;    
