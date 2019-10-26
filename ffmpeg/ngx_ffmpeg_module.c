@@ -397,10 +397,10 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
     ret = avcodec_send_packet(input_codec_context, pkt);
     if(ret < 0){
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s \n", av_err2str(ret));
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s %d\n", av_err2str(ret)), nal_type;
         // return NGX_ERROR;
     }else{
-        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.\n");
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success %d.\n", nal_type);
     }
     // ret = av_interleaved_write_frame(ctx->out_av_format_context, pkt);
     // if(ret < 0){
