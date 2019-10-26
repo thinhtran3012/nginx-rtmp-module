@@ -362,7 +362,8 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ctx->pre_timestamp = (int64_t)h->timestamp;
     }
     pkt->data = (uint8_t *)out.start;
-    pkt->size = (out.last - out.start);     
+    pkt->size = (out.last - out.start); 
+        
     // pkt->pts = (int64_t) h->timestamp;       
     // pkt->dts = pkt->pts;    
     // pkt->flags |= AV_PKT_FLAG_KEY; 
@@ -402,11 +403,11 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }else{
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success %d.\n", nal_type);
     }
-    // ret = av_interleaved_write_frame(ctx->out_av_format_context, pkt);
-    // if(ret < 0){
-    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data %s.", av_err2str(ret));
-    //     return NGX_ERROR;
-    // }    
+    ret = av_interleaved_write_frame(ctx->out_av_format_context, pkt);
+    if(ret < 0){
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data %s.", av_err2str(ret));
+        return NGX_ERROR;
+    }    
     av_packet_unref(pkt);
     if(!pkt){
         av_packet_free(&pkt);
