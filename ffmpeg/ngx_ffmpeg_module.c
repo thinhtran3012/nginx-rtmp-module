@@ -37,7 +37,7 @@ static void * ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf);
 static char * ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child);
 static ngx_int_t ngx_rtmp_ffmpeg_copy(ngx_rtmp_session_t *s, void *dst, u_char **src, size_t n, ngx_chain_t **in);
 static ngx_int_t ngx_rtmp_ffmpeg_append_sps_pps(ngx_rtmp_session_t *s, ngx_buf_t *out);
-static ngx_int_t ngx_rtmp_ffmpeg_append_aud(ngx_rtmp_session_t *s, ngx_buf_t *out)
+static ngx_int_t ngx_rtmp_ffmpeg_append_aud(ngx_rtmp_session_t *s, ngx_buf_t *out);
 
 typedef struct {
     ngx_str_t                           type; /*hls/mpeg dash/fmp4*/
