@@ -246,8 +246,8 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
     pkt->data = p;
     pkt->size = size; 
-    pkt->pts = pkt->dts = 0;
-    pkt->flags |= AV_PKT_FLAG_KEY;    
+    // pkt->pts = pkt->dts = 0;
+    // pkt->flags |= AV_PKT_FLAG_KEY;    
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     // frame = av_frame_alloc();
     // if(!frame){
