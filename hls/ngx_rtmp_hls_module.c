@@ -1953,14 +1953,14 @@ ngx_rtmp_hls_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_debug2(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
                        "hls: h264 NAL type=%ui, len=%uD",
                        (ngx_uint_t) nal_type, len);
-
+        //ignore if this is SPS/PPS/AUD Unit
         if (nal_type >= 7 && nal_type <= 9) {
             if (ngx_rtmp_hls_copy(s, NULL, &p, len - 1, &in) != NGX_OK) {
                 return NGX_ERROR;
             }
             continue;
         }
-
+        //aud = access unit delimiter
         if (!aud_sent) {
             switch (nal_type) {
                 case 1:
