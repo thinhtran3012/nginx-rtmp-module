@@ -494,7 +494,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         ctx->nb_streams = -1;
     }    
      
-    ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "mpegts", 0);  
+    ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0);  
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", av_err2str(ret));        
         return NGX_ERROR;
