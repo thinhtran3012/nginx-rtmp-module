@@ -485,7 +485,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     //need to init ffmpeg's parameters
     if(!ctx->out_av_format_context){
         ctx->out_av_format_context = NULL;
-        // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", ctx->playlist.data);
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", ctx->playlist.data);
         avformat_alloc_output_context2(&(ctx->out_av_format_context), NULL, NULL, ctx->playlist.data);
         if(!ctx->out_av_format_context){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output format context.");
