@@ -56,6 +56,7 @@ typedef struct{
     int                                 video_stream_index;
     AVOutputFormat                      *out_av_format;
     int                                 nb_streams;//number of stream in file    
+    int64_t                             pre_timestamp;
 } ngx_rtmp_ffmpeg_ctx_t;
 
 static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
@@ -319,11 +320,17 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc packet.");
         return NGX_ERROR;
     }
+    if(!ctx->pre_timestamp){
+        ctx->pre_timestamp = (int64_t)h->timestamp;
+    }
     pkt->data = (uint8_t *)out.start;
     pkt->size = (out.last - out.start);     
     pkt->pts = (int64_t) h->timestamp;       
     pkt->dts = pkt->pts;    
-    pkt->flags |= AV_PKT_FLAG_KEY;    
+    pkt->flags |= AV_PKT_FLAG_KEY; 
+    if(ctx->pre_timestamp){
+        pkt->duration = pkt->pts - ctx->pre_timestamp;
+    }
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: packet size %d.", pkt->size);
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     // frame = av_frame_alloc();
@@ -343,6 +350,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data %s.", av_err2str(ret));
         return NGX_ERROR;
     }    
+    av_packet_unref(pkt);
     if(!pkt){
         av_packet_free(&pkt);
     }
