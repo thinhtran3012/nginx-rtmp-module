@@ -331,7 +331,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     if(ctx->pre_timestamp){
         pkt->duration = pkt->pts - ctx->pre_timestamp;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: packet size %d.", pkt->size);
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: packet duration %d.", pkt->duration);
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     // frame = av_frame_alloc();
     // if(!frame){
@@ -502,7 +502,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         ctx->nb_streams = -1;
     }    
      
-    ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0);  
+    ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "mpegts", 0);  
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", av_err2str(ret));        
         return NGX_ERROR;
