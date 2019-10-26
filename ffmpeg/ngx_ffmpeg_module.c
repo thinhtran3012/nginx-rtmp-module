@@ -142,6 +142,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     uint32_t                          cts;
     ngx_uint_t                        nal_bytes;
     ngx_int_t                         aud_sent, sps_pps_sent, boundary;
+    uint32_t                          len, rlen;
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
