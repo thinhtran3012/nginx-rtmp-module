@@ -36,6 +36,7 @@ static ngx_int_t ngx_rtmp_ffmpeg_postconfiguration(ngx_conf_t *cf);
 static void * ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf);
 static char * ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child);
 static ngx_int_t ngx_rtmp_ffmpeg_copy(ngx_rtmp_session_t *s, void *dst, u_char **src, size_t n, ngx_chain_t **in);
+static ngx_int_t ngx_rtmp_ffmpeg_append_sps_pps(ngx_rtmp_session_t *s, ngx_buf_t *out);
 
 typedef struct {
     ngx_str_t                           type; /*hls/mpeg dash/fmp4*/
@@ -297,6 +298,13 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
                 sps_pps_sent = 0;
                 break;
             case 5:
+                if (sps_pps_sent) {
+                    break;
+                }
+                if (ngx_rtmp_ffmpeg_append_sps_pps(s, &out) != NGX_OK) {
+                    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                                  "ffmpeg: error appenging SPS/PPS NALs");
+                }
                 sps_pps_sent = 1;
                 break;
         }
@@ -643,6 +651,116 @@ ngx_rtmp_ffmpeg_copy(ngx_rtmp_session_t *s, void *dst, u_char **src, size_t n,
 
         *src = (*in)->buf->pos;
     }
+}
+
+static ngx_int_t
+ngx_rtmp_ffmpeg_append_sps_pps(ngx_rtmp_session_t *s, ngx_buf_t *out)
+{
+    ngx_rtmp_codec_ctx_t           *codec_ctx;
+    u_char                         *p;
+    ngx_chain_t                    *in;
+    ngx_rtmp_hls_ctx_t             *ctx;
+    int8_t                          nnals;
+    uint16_t                        len, rlen;
+    ngx_int_t                       n;
+
+    ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
+
+    codec_ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_codec_module);
+
+    if (ctx == NULL || codec_ctx == NULL) {
+        return NGX_ERROR;
+    }
+
+    in = codec_ctx->avc_header;
+    if (in == NULL) {
+        return NGX_ERROR;
+    }
+
+    p = in->buf->pos;
+
+    /*
+     * Skip bytes:
+     * - flv fmt
+     * - H264 CONF/PICT (0x00)
+     * - 0
+     * - 0
+     * - 0
+     * - version
+     * - profile
+     * - compatibility
+     * - level
+     * - nal bytes
+     */
+
+    if (ngx_rtmp_ffmpeg_copy(s, NULL, &p, 10, &in) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    /* number of SPS NALs */
+    if (ngx_rtmp_ffmpeg_copy(s, &nnals, &p, 1, &in) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    nnals &= 0x1f; /* 5lsb */
+
+    ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
+                   "ffmpeg: SPS number: %uz", nnals);
+
+    /* SPS */
+    for (n = 0; ; ++n) {
+        for (; nnals; --nnals) {
+
+            /* NAL length */
+            if (ngx_rtmp_ffmpeg_copy(s, &rlen, &p, 2, &in) != NGX_OK) {
+                return NGX_ERROR;
+            }
+
+            ngx_rtmp_rmemcpy(&len, &rlen, 2);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
+                           "ffmpeg: header NAL length: %uz", (size_t) len);
+
+            /* AnnexB prefix */
+            if (out->end - out->last < 4) {
+                ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                              "ffmpeg: too small buffer for header NAL size");
+                return NGX_ERROR;
+            }
+
+            *out->last++ = 0;
+            *out->last++ = 0;
+            *out->last++ = 0;
+            *out->last++ = 1;
+
+            /* NAL body */
+            if (out->end - out->last < len) {
+                ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                              "ffmpeg: too small buffer for header NAL");
+                return NGX_ERROR;
+            }
+
+            if (ngx_rtmp_ffmpeg_copy(s, out->last, &p, len, &in) != NGX_OK) {
+                return NGX_ERROR;
+            }
+
+            out->last += len;
+        }
+
+        if (n == 1) {
+            break;
+        }
+
+        /* number of PPS NALs */
+        if (ngx_rtmp_ffmpeg_copy(s, &nnals, &p, 1, &in) != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+        ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
+                       "ffmpeg: PPS number: %uz", nnals);
+    }
+
+    return NGX_OK;
 }
 
 static void *
