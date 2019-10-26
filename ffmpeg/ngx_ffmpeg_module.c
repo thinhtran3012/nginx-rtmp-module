@@ -321,7 +321,9 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
     pkt->data = out.start;
     pkt->size = (out.end - out.start); 
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: timestamp %d \n", h->timestamp);
     pkt->pts = (int64_t) h->timestamp;   
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: timestamp %d \n", pkt->pts);
     pkt->dts = pkt->pts + cts * 90;
     pkt->flags |= AV_PKT_FLAG_KEY;    
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
