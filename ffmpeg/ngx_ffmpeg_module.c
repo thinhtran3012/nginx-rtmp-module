@@ -366,22 +366,22 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     input_codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if(!input_codec){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not find decoder \n");
-        return NGX_ERROR:
+        return NGX_ERROR;
     }
     input_codec_context = avcodec_alloc_context3(input_codec);
     if(!input_codec_context){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not allocate input codec context \n");
-        return NGX_ERROR:
+        return NGX_ERROR;
     }
     ret = avcodec_open2(input_codec_context, input_codec, NULL);
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not open input codec context \n");
-        return NGX_ERROR:
+        return NGX_ERROR;
     }
     ret = avcodec_send_packet(input_codec_context, pkt);
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s \n", av_err2str(ret));
-        // return NGX_ERROR;
+        return NGX_ERROR;
     }else{
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.");
     }
