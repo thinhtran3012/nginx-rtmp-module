@@ -659,10 +659,10 @@ ngx_rtmp_ffmpeg_append_sps_pps(ngx_rtmp_session_t *s, ngx_buf_t *out)
     ngx_rtmp_codec_ctx_t           *codec_ctx;
     u_char                         *p;
     ngx_chain_t                    *in;
-    ngx_rtmp_hls_ctx_t             *ctx;
-    int8_t                          nnals;
-    uint16_t                        len, rlen;
-    ngx_int_t                       n;
+    ngx_rtmp_ffmpeg_ctx_t          *ctx;
+    int8_t                         nnals;
+    uint16_t                       len, rlen;
+    ngx_int_t                      n;
 
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
 
