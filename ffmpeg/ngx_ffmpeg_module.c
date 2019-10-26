@@ -295,10 +295,10 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
                 case 1:
                 case 5:
                 case 6:
-                    if (ngx_rtmp_ffmpeg_append_aud(s, &out) != NGX_OK) {
-                        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                                      "ffmpeg: error appending AUD NAL");
-                    }
+                    // if (ngx_rtmp_ffmpeg_append_aud(s, &out) != NGX_OK) {
+                    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                    //                   "ffmpeg: error appending AUD NAL");
+                    // }                    
                     /* fall through */
                 case 9:
                     aud_sent = 1;
@@ -313,10 +313,10 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
                 if (sps_pps_sent) {
                     break;
                 }
-                if (ngx_rtmp_ffmpeg_append_sps_pps(s, &out) != NGX_OK) {
-                    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                                  "ffmpeg: error appenging SPS/PPS NALs");
-                }
+                // if (ngx_rtmp_ffmpeg_append_sps_pps(s, &out) != NGX_OK) {
+                //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                //                   "ffmpeg: error appenging SPS/PPS NALs");
+                // }
                 sps_pps_sent = 1;
                 break;
         }
