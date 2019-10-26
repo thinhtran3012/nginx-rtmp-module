@@ -35,6 +35,7 @@ static ngx_rtmp_stream_eof_pt           next_stream_eof;
 static ngx_int_t ngx_rtmp_ffmpeg_postconfiguration(ngx_conf_t *cf);
 static void * ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf);
 static char * ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child);
+static ngx_int_t ngx_rtmp_ffmpeg_copy(ngx_rtmp_session_t *s, void *dst, u_char **src, size_t n, ngx_chain_t **in);
 
 typedef struct {
     ngx_str_t                           type; /*hls/mpeg dash/fmp4*/
@@ -129,7 +130,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     ngx_rtmp_ffmpeg_app_conf_t        *facf;
     ngx_rtmp_ffmpeg_ctx_t             *ctx;
     ngx_rtmp_codec_ctx_t              *codec_ctx;
-    uint8_t                           ftype, htype;
+    uint8_t                           fmt, ftype, htype, nal_type, src_nal_type;
     int                               ret;
     u_char                            *p;
     static u_char                     buffer[NGX_RTMP_FFMPEG_BUFSIZE];
@@ -137,6 +138,11 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     AVFrame                           *frame;
     int                               got_frame = 0;
     AVStream                          *out_av_stream;
+    ngx_buf_t                         out, *b;
+    uint32_t                          cts;
+    ngx_uint_t                        nal_bytes;
+    ngx_int_t                         aud_sent, sps_pps_sent, boundary;
+    uint32_t                          len, rlen;
 
     facf = ngx_rtmp_get_module_app_conf(s, ngx_rtmp_ffmpeg_module);
     ctx = ngx_rtmp_get_module_ctx(s, ngx_rtmp_ffmpeg_module);
@@ -223,20 +229,89 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
         
     //how to decode this data?
-    in->buf->pos += 5;
-    p = buffer;
-    size = 0;
+    p = in->buf->pos;
+    if (ngx_rtmp_ffmpeg_copy(s, &fmt, &p, 1, &in) != NGX_OK) {
+        return NGX_ERROR;
+    }
+    ftype = (fmt & 0xf0) >> 4;
 
-    for (; in && size < sizeof(buffer); in = in->next) {
+    if (ngx_rtmp_ffmpeg_copy(s, &htype, &p, 1, &in) != NGX_OK) {
+        return NGX_ERROR;
+    }
 
-        bsize = (size_t) (in->buf->last - in->buf->pos);
-        if (size + bsize > sizeof(buffer)) {
-            bsize = (size_t) (sizeof(buffer) - size);
+    if (htype != 1) {
+        return NGX_OK;
+    }
+
+    /* 3 bytes: decoder delay */
+
+    if (ngx_rtmp_ffmpeg_copy(s, &cts, &p, 3, &in) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    cts = ((cts & 0x00FF0000) >> 16) | ((cts & 0x000000FF) << 16) |
+          (cts & 0x0000FF00);
+
+    ngx_memzero(&out, sizeof(out));
+
+    out.start = buffer;
+    out.end = buffer + sizeof(buffer);
+    out.pos = out.start;
+    out.last = out.pos;
+
+    nal_bytes = codec_ctx->avc_nal_bytes;
+    aud_sent = 0;
+    sps_pps_sent = 0;
+
+    while (in) {
+        //calculate length of payload
+        if (ngx_rtmp_ffmpeg_copy(s, &rlen, &p, nal_bytes, &in) != NGX_OK) {
+            return NGX_OK;
         }
 
-        p = ngx_cpymem(p, in->buf->pos, bsize);
-        size += bsize;
+        len = 0;
+        ngx_rtmp_rmemcpy(&len, &rlen, nal_bytes);
+        if (len == 0) {
+            continue;
+        }
+        //get nal type
+        if (ngx_rtmp_ffmpeg_copy(s, &src_nal_type, &p, 1, &in) != NGX_OK) {
+            return NGX_OK;
+        }
+        nal_type = src_nal_type & 0x1f;
+        //ignore if this is SPS/PPS/AUD Unit
+        if (nal_type >= 7 && nal_type <= 9) {
+            if (ngx_rtmp_ffmpeg_copy(s, NULL, &p, len - 1, &in) != NGX_OK) {
+                return NGX_ERROR;
+            }
+            continue;
+        }
+        if (!aud_sent) {
+            if(nal_type == 9){
+                aud_sent = 1;
+            }
+        }
+        switch (nal_type) {
+            case 1:
+                sps_pps_sent = 0;
+                break;
+            case 5:
+                sps_pps_sent = 1;
+                break;
+        }
+        //NOTE: we only read encode body, do not insert any other data
+        if (out.end - out.last < (ngx_int_t) len) {
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                          "ffmpeg: not enough buffer for NAL");
+            return NGX_OK;
+        }
+        if (ngx_rtmp_ffmpeg_copy(s, out.last, &p, len - 1, &in) != NGX_OK) {
+            return NGX_ERROR;
+        }
+
+        out.last += (len - 1);
     }
+    //now we have out is a H264 frame ~ FFmpeg Packet
     AVPacket *pkt;
     // av_init_packet(pkt);
     pkt = av_packet_alloc();
@@ -244,23 +319,25 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc packet.");
         return NGX_ERROR;
     }
-    pkt->data = p;
-    pkt->size = size; 
-    pkt->pts = pkt->dts = 0;
-    // pkt->flags |= AV_PKT_FLAG_KEY;    
+    pkt->data = (uint8_t *)out.start;
+    pkt->size = (out.last - out.start);     
+    pkt->pts = (int64_t) h->timestamp;       
+    pkt->dts = pkt->pts;    
+    pkt->flags |= AV_PKT_FLAG_KEY;    
+    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: packet size %d.", pkt->size);
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     // frame = av_frame_alloc();
     // if(!frame){
     //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not alloc frame.");
     //     return NGX_ERROR;
     // }
-    // ret = avcodec_send_packet(ctx->out_av_codec_context, pkt);
-    // if(ret < 0){
-    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s \n", av_err2str(ret));
-    //     // return NGX_ERROR;
-    // }else{
-    //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.");
-    // }
+    ret = avcodec_send_packet(ctx->out_av_codec_context, pkt);
+    if(ret < 0){
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not send packet to decoder %s \n", av_err2str(ret));
+        // return NGX_ERROR;
+    }else{
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: decode success.");
+    }
     ret = av_interleaved_write_frame(ctx->out_av_format_context, pkt);
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Can not write data %s.", av_err2str(ret));
@@ -408,7 +485,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
     //need to init ffmpeg's parameters
     if(!ctx->out_av_format_context){
         ctx->out_av_format_context = NULL;
-        // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", ctx->playlist.data);
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", ctx->playlist.data);
         avformat_alloc_output_context2(&(ctx->out_av_format_context), NULL, NULL, ctx->playlist.data);
         if(!ctx->out_av_format_context){
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: Could not create output format context.");
@@ -417,7 +494,7 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         ctx->nb_streams = -1;
     }    
      
-    ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "mpegts", 0);  
+    ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0);  
     if(ret < 0){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", av_err2str(ret));        
         return NGX_ERROR;
@@ -448,9 +525,9 @@ ngx_rtmp_ffmpeg_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
     if (facf == NULL || !facf->ffmpeg || ctx == NULL) {
         goto next;
     }
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");
     av_write_trailer(ctx->out_av_format_context);    
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
     
     next:
     return next_close_stream(s, v);
@@ -496,6 +573,63 @@ static ngx_int_t ngx_rtmp_ffmpeg_postconfiguration(ngx_conf_t *cf)
     ngx_rtmp_stream_eof = ngx_rtmp_ffmpeg_stream_eof;
 
     return NGX_OK;
+}
+
+/**
+ * @param dst where copy to. If NULL, we only read, and move pointer src
+ * @param src where copy from
+ * @param n number of byte to copy
+ * @param in nginx buffer
+ **/ 
+static ngx_int_t
+ngx_rtmp_ffmpeg_copy(ngx_rtmp_session_t *s, void *dst, u_char **src, size_t n,
+    ngx_chain_t **in)
+{
+    u_char  *last;
+    size_t   pn;
+
+    if (*in == NULL) {
+        return NGX_ERROR;
+    }
+
+    for ( ;; ) {
+        last = (*in)->buf->last;
+
+        if ((size_t)(last - *src) >= n) {
+            if (dst) {
+                ngx_memcpy(dst, *src, n);
+            }
+
+            *src += n;
+
+            while (*in && *src == (*in)->buf->last) {
+                *in = (*in)->next;
+                if (*in) {
+                    *src = (*in)->buf->pos;
+                }
+            }
+
+            return NGX_OK;
+        }
+
+        pn = last - *src;
+
+        if (dst) {
+            ngx_memcpy(dst, *src, pn);
+            dst = (u_char *)dst + pn;
+        }
+
+        n -= pn;
+        *in = (*in)->next;
+
+        if (*in == NULL) {
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                          "ffmpeg: failed to read %uz byte(s)", n);
+            return NGX_ERROR;
+        }
+
+        *src = (*in)->buf->pos;
+    }
 }
 
 static void *
