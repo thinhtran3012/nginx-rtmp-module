@@ -416,7 +416,7 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
         av_frame_free(&frame);
     }
     // if(ctx->frag_duration >= 5000){
-    //     av_write_trailer(ctx->out_av_format_context);
+        av_write_trailer(ctx->out_av_format_context);
     // }    
     return NGX_OK;
 }
