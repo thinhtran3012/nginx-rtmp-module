@@ -507,6 +507,11 @@ ngx_rtmp_ffmpeg_publish(ngx_rtmp_session_t *s, ngx_rtmp_publish_t *v)
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", av_err2str(ret));        
         return NGX_ERROR;
     }
+    ret = av_opt_set(ctx->out_av_format_context->priv_data, "bsf:v", "h264_mp4toannexb", 0);
+    if(ret < 0){
+        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: %s.", av_err2str(ret));        
+        return NGX_ERROR;
+    }
     ctx->out_av_format = av_guess_format("hls", NULL, NULL);
     if(!ctx->out_av_format){
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: no output format.");
