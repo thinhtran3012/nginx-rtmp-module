@@ -205,11 +205,11 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set parameters %s.", av_err2str(ret));
             return NGX_ERROR;
         }
-        ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0); 
-        if(ret < 0){
-            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set options.");
-            return NGX_ERROR;
-        }
+        // ret = av_opt_set(ctx->out_av_format_context->priv_data, "hls_segment_type", "fmp4", 0); 
+        // if(ret < 0){
+        //     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: could not set options.");
+        //     return NGX_ERROR;
+        // }
         if(!(ctx->out_av_format_context->oformat->flags & AVFMT_NOFILE)){
             ret = avio_open(&(ctx->out_av_format_context->pb), ctx->playlist.data, AVIO_FLAG_WRITE);
             if(ret < 0){
