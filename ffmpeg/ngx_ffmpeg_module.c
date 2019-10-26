@@ -345,15 +345,14 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     }
     pkt->data = (uint8_t *)out.start;
     pkt->size = (out.last - out.start);     
-    pkt->pts = (int64_t) h->timestamp;       
-    pkt->dts = pkt->pts;    
-    pkt->flags |= AV_PKT_FLAG_KEY; 
-    pkt->stream_index = 0;    
-    if(ctx->pre_timestamp){
-        pkt->duration = pkt->pts - ctx->pre_timestamp;
-    }
-    ctx->frag_duration += pkt->duration;
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: packet duration %d.", pkt->duration);
+    // pkt->pts = (int64_t) h->timestamp;       
+    // pkt->dts = pkt->pts;    
+    // pkt->flags |= AV_PKT_FLAG_KEY; 
+    // pkt->stream_index = 0;    
+    // if(ctx->pre_timestamp){
+    //     pkt->duration = pkt->pts - ctx->pre_timestamp;
+    // }
+    // ctx->frag_duration += pkt->duration;    
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     // frame = av_frame_alloc();
     // if(!frame){
