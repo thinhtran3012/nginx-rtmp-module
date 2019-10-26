@@ -320,6 +320,24 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
                 sps_pps_sent = 1;
                 break;
         }
+
+        if (out.end - out.last < 5) {
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                          "ffmpeg: not enough buffer for AnnexB prefix");
+            return NGX_OK;
+        }
+
+         /* first AnnexB prefix is long (4 bytes) */
+
+        if (out.last == out.pos) {
+            *out.last++ = 0;
+        }
+
+        *out.last++ = 0;
+        *out.last++ = 0;
+        *out.last++ = 1;
+        *out.last++ = src_nal_type;
+
         //NOTE: we only read encode body, do not insert any other data
         if (out.end - out.last < (ngx_int_t) len) {
             ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
