@@ -59,6 +59,7 @@ typedef struct{
     AVOutputFormat                      *out_av_format;
     int                                 nb_streams;//number of stream in file    
     int64_t                             pre_timestamp;
+    int64_t                             frag_duration;
 } ngx_rtmp_ffmpeg_ctx_t;
 
 static ngx_command_t ngx_rtmp_ffmpeg_commands[] = {
@@ -347,11 +348,11 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     pkt->pts = (int64_t) h->timestamp;       
     pkt->dts = pkt->pts;    
     pkt->flags |= AV_PKT_FLAG_KEY; 
-    pkt->stream_index = 0;
-    
+    pkt->stream_index = 0;    
     if(ctx->pre_timestamp){
         pkt->duration = pkt->pts - ctx->pre_timestamp;
     }
+    ctx->frag_duration += pkt->duration;
     ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: packet duration %d.", pkt->duration);
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: message size: %d.", size);
     // frame = av_frame_alloc();
@@ -378,6 +379,9 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
     if(!frame){
         av_frame_free(&frame);
     }
+    if(ctx->frag_duration >= 5000){
+        av_write_trailer(ctx->out_av_format_context);
+    }    
     return NGX_OK;
 }
 
@@ -564,8 +568,7 @@ ngx_rtmp_ffmpeg_close_stream(ngx_rtmp_session_t *s, ngx_rtmp_close_stream_t *v)
     if (facf == NULL || !facf->ffmpeg || ctx == NULL) {
         goto next;
     }
-    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");
-    av_write_trailer(ctx->out_av_format_context);    
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 1.");        
     // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "ffmpeg: 2.");
     
     next:
