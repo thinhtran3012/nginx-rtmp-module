@@ -37,6 +37,7 @@ static void * ngx_rtmp_ffmpeg_create_app_conf(ngx_conf_t *cf);
 static char * ngx_rtmp_ffmpeg_merge_app_conf(ngx_conf_t *cf, void *parent, void *child);
 static ngx_int_t ngx_rtmp_ffmpeg_copy(ngx_rtmp_session_t *s, void *dst, u_char **src, size_t n, ngx_chain_t **in);
 static ngx_int_t ngx_rtmp_ffmpeg_append_sps_pps(ngx_rtmp_session_t *s, ngx_buf_t *out);
+static ngx_int_t ngx_rtmp_ffmpeg_append_aud(ngx_rtmp_session_t *s, ngx_buf_t *out)
 
 typedef struct {
     ngx_str_t                           type; /*hls/mpeg dash/fmp4*/
@@ -289,8 +290,18 @@ ngx_rtmp_ffmpeg_video(ngx_rtmp_session_t *s, ngx_rtmp_header_t *h,
             continue;
         }
         if (!aud_sent) {
-            if(nal_type == 9){
-                aud_sent = 1;
+            switch (nal_type) {
+                case 1:
+                case 5:
+                case 6:
+                    if (ngx_rtmp_ffmpeg_append_aud(s, &out) != NGX_OK) {
+                        ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+                                      "ffmpeg: error appending AUD NAL");
+                    }
+                    /* fall through */
+                case 9:
+                    aud_sent = 1;
+                    break;
             }
         }
         switch (nal_type) {
@@ -754,6 +765,21 @@ ngx_rtmp_ffmpeg_append_sps_pps(ngx_rtmp_session_t *s, ngx_buf_t *out)
         ngx_log_debug1(NGX_LOG_DEBUG_RTMP, s->connection->log, 0,
                        "ffmpeg: PPS number: %uz", nnals);
     }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_rtmp_ffmpeg_append_aud(ngx_rtmp_session_t *s, ngx_buf_t *out)
+{
+    static u_char   aud_nal[] = { 0x00, 0x00, 0x00, 0x01, 0x09, 0xf0 };
+
+    if (out->last + sizeof(aud_nal) > out->end) {
+        return NGX_ERROR;
+    }
+
+    out->last = ngx_cpymem(out->last, aud_nal, sizeof(aud_nal));
 
     return NGX_OK;
 }
