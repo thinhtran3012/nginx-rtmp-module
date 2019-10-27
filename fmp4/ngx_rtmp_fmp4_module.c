@@ -394,8 +394,8 @@ ngx_rtmp_fmp4_close_fragments(ngx_rtmp_session_t *s){
     //close temp file
     ngx_rtmp_fmp4_close_fragment(s, &ctx->video);
     ngx_rtmp_fmp4_close_fragment(s, &ctx->audio); 
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                          "==========fmp4: create new m4s file=========");
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+    //                       "==========fmp4: create new m4s file=========");
     //we write m4s data in here?    
     ngx_rtmp_fmp4_next_frag(s);
     ngx_rtmp_fmp4_write_playlist(s);
@@ -421,8 +421,8 @@ ngx_rtmp_fmp4_write_data(ngx_rtmp_session_t *s,  ngx_rtmp_fmp4_track_t *vt,  ngx
     ctx->last_chunk_file.len = strlen((const char*)ctx->stream.data);
     ctx->last_chunk_file.data = ngx_palloc(s->connection->pool, ctx->last_chunk_file.len);
     *ngx_cpymem(ctx->last_chunk_file.data, ctx->stream.data, ctx->last_chunk_file.len) = 0;
-    ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                      "fmp4: create file %s", ctx->stream.data);
+    // ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
+    //                   "fmp4: create file %s", ctx->stream.data);
     fd = ngx_open_file(ctx->stream.data, NGX_FILE_RDWR,
                        NGX_FILE_TRUNCATE, NGX_FILE_DEFAULT_ACCESS);
     if (fd == NGX_INVALID_FILE) {
